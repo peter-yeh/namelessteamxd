@@ -7,7 +7,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('recipefinder', '0002_set_unique'),
+        ('recipefinder', '0002_set_to_unique'),
     ]
 
     operations = [
