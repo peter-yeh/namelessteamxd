@@ -18,7 +18,7 @@ For hack n roll 2019
     $ pip install -r requirements.txt
     ```
 
- 2. Create and seed the database (Create a database named `namelessteam` in mysql first)
+ 2. Create and seed the database (Create a database named `recipefinder` in mysql first)
     ```
     $ python manage.py migrate
     ```
