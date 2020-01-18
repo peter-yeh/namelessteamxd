@@ -21,22 +21,29 @@ CHOOSING, TYPING_REPLY, TYPING_ingredient_category = range(3)
 
 # added in by meeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
 
-INGREDIENTS, MEAT, DIARY, ROBIN, BIO = range(5)
+INGREDIENTS, MEAT, DAIRY, ROBIN, BIO = range(5)
 
 type_keyboard = [['Spices and Herbs', 'Dairy', 'Seasonings', 'Vegetables'], ['Baking', 'Meats', 'Condiments',
                         'Alcohol'], ['Fruits', 'Oil', 'Grains', 'Soup']]
-meat_keyboard = [["Beef"], ["Chicken"]]
-Spices_and_herbs: [['basil', 'bay leaf', 'cayenne pepper', 'chili flakes'],
+meats_keyboard = [['bacon', 'beef shanks', 'beef tenderloin', 'chicken breasts'], ['chicken thighs', 'chicken wings', 
+                'ground beef', 'ground chicken'], ['ground lamb', 'ground turkey', 'ham', 'pork loin'], ['pork ribs', turkey breasts', 'venison']]
+
+Spices_and_herbs_keyboard = [['basil', 'bay leaf', 'cayenne pepper', 'chili flakes'],
                       ['chilli powder', 'cilantro', 'cinnamon', 'coriander'],
                       ['cumin', 'curry powder', 'dill', 'italian seasoning'],
                       ['lemongrass', 'nutmeg', 'oregano'],
                       ['paprika', 'parsley', 'pecans'],
                       ['rosemary', 'thyme', 'turmeric']]
-Dairy: [['butter', 'buttermilk', 'cheddar cheese', 'coconut milk'], 
+diary_keyboard = [['butter', 'buttermilk', 'cheddar cheese', 'coconut milk'], 
                       ['cream cheese', 'eggs', 'milk', 'parmesan cheese']]
-Seasonings: [['black pepper', 'fish sauce', 'salt', 'sour cream'], 
+seasonings_keyboard = [['black pepper', 'fish sauce', 'salt', 'sour cream'], 
                       ['soy sauce', 'sugar', 'vinegar', 'worcestershire sauce']]
-diary_keyboard = [["milk"], ["soymilk"]]
+condiments_keyboard = [['barbecue sauce', 'chilli sauce', 'mayonaise'], ['mustard', 'Sriracha', 'tomato sauce']]
+Baking: [['active dry yeast', 'all purpose flour', 'almond extract', 'baking powder'], ['baking soda', 'bread crumbs', 'caramel', 'chocolate chips'], ['cornstarch', 'cream of tartar', 'flour', 'heavy whipping cream'], 
+['honey', 'hot chocolate powder', 'maple syrup', 'marshmallows', 'peanut butter'], ['peppermint extract', 'vanilla extract', 'whipped cream']]
+
+soup_keyboard = ['beef stock', 'chicken stock']
+
 basket = []
 
 # def photo(update, context):
@@ -102,7 +109,8 @@ class Command(BaseCommand):
         update.message.reply_text(
             'Hi! My name is Professor Bot. I will hold a conversation with you. '
             'Send /cancel to stop talking to me.\n\n'
-            'Which CHANGEME do you have?',
+            'Send /done to find ur receipt\n\n'
+            'Which CHANGEMEEEEEE do you have?',
             reply_markup=ReplyKeyboardMarkup(type_keyboard, one_time_keyboard=True))
 
         return INGREDIENTS
@@ -132,7 +140,7 @@ class Command(BaseCommand):
             return MEAT
 
         else :
-            logger.info("exitinggggggggggggggggggggggggg")
+            logger.info("Exiting ingredients")
             # return BIO
 
 
