@@ -1,10 +1,13 @@
-
 from django.core.management.base import BaseCommand, CommandError
 import logging
+import math
 
 from telegram import (ReplyKeyboardMarkup, ReplyKeyboardRemove)
 from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters,
                           ConversationHandler)
+
+from recipefinder.models import IngredientCategory, Ingredient
+from recipefinder.utils.util_rank import rank_recipes
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -12,153 +15,134 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 logger = logging.getLogger(__name__)
 
-CHOOSING, TYPING_REPLY, TYPING_ingredient_category = range(3)
+MAIN, CATEGORY, INGREDIENT, BIO = range(4)
 
-# reply_keyboard = [['Age', 'Favourite colour'],
-#                   ['Number of siblings', 'Something else...'],
-#                   ['Done']]
-# markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
+def split_array(array, size_per_list):
+    new_array = []
+    for i in range(math.ceil(len(array) / size_per_list)):
+        new_array.append(array[i * size_per_list: min((i + 1) * size_per_list, len(array))])
+    return new_array
 
-# added in by meeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+def get_categories():
+    return IngredientCategory.objects.all().values_list('name', flat=True)
 
-INGREDIENTS, MEAT, DAIRY, ROBIN, BIO = range(5)
-
-type_keyboard = [['Spices and Herbs', 'Dairy', 'Seasonings', 'Vegetables'], ['Baking', 'Meats', 'Condiments',
-                        'Alcohol'], ['Fruits', 'Oil', 'Grains', 'Soup']]
-meats_keyboard = [['bacon', 'beef shanks', 'beef tenderloin', 'chicken breasts'], ['chicken thighs', 'chicken wings', 
-                'ground beef', 'ground chicken'], ['ground lamb', 'ground turkey', 'ham', 'pork loin'], ['pork ribs', turkey breasts', 'venison']]
-
-Spices_and_herbs_keyboard = [['basil', 'bay leaf', 'cayenne pepper', 'chili flakes'],
-                      ['chilli powder', 'cilantro', 'cinnamon', 'coriander'],
-                      ['cumin', 'curry powder', 'dill', 'italian seasoning'],
-                      ['lemongrass', 'nutmeg', 'oregano'],
-                      ['paprika', 'parsley', 'pecans'],
-                      ['rosemary', 'thyme', 'turmeric']]
-diary_keyboard = [['butter', 'buttermilk', 'cheddar cheese', 'coconut milk'], 
-                      ['cream cheese', 'eggs', 'milk', 'parmesan cheese']]
-seasonings_keyboard = [['black pepper', 'fish sauce', 'salt', 'sour cream'], 
-                      ['soy sauce', 'sugar', 'vinegar', 'worcestershire sauce']]
-condiments_keyboard = [['barbecue sauce', 'chilli sauce', 'mayonaise'], ['mustard', 'Sriracha', 'tomato sauce']]
-Baking: [['active dry yeast', 'all purpose flour', 'almond extract', 'baking powder'], ['baking soda', 'bread crumbs', 'caramel', 'chocolate chips'], ['cornstarch', 'cream of tartar', 'flour', 'heavy whipping cream'], 
-['honey', 'hot chocolate powder', 'maple syrup', 'marshmallows', 'peanut butter'], ['peppermint extract', 'vanilla extract', 'whipped cream']]
-
-soup_keyboard = ['beef stock', 'chicken stock']
-
-basket = []
-
-# def photo(update, context):
-#     user = update.message.from_user
-#     photo_file = update.message.photo[-1].get_file()
-#     photo_file.download('user_photo.jpg')
-#     logger.info("Photo of %s: %s", user.first_name, 'user_photo.jpg')
-#     update.message.reply_text('Gorgeous! Now, send me your location please, '
-#                               'or send /skip if you don\'t want to.')
-
-#     return LOCATION
-
-
-# def skip_photo(update, context):
-#     user = update.message.from_user
-#     logger.info("User %s did not send a photo.", user.first_name)
-#     update.message.reply_text('I bet you look great! Now, send me your location please, '
-#                               'or send /skip.')
-
-#     return LOCATION
-
-
-# def location(update, context):
-#     user = update.message.from_user
-#     user_location = update.message.location
-#     logger.info("Location of %s: %f / %f", user.first_name, user_location.latitude,
-#                 user_location.longitude)
-#     update.message.reply_text('Maybe I can visit you sometime! '
-#                               'At last, tell me something about yourself.')
-
-#     return BIO
-
-
-# def skip_location(update, context):
-#     user = update.message.from_user
-#     logger.info("User %s did not send a location.", user.first_name)
-#     update.message.reply_text('You seem a bit paranoid! '
-#                               'At last, tell me something about yourself.')
-
-#     return BIO
-
-
-
-
-# End of the my codeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
-
-
-
-
+def get_ingredients(category_name):
+    return Ingredient.objects.filter(category__name=category_name).values_list('name', flat=True)
 
 class Command(BaseCommand):
     help = 'Closes the specified poll for voting'
 
     def __init__(self):
-        self.meat_counter = 0
+        self.data = {}
 
     def handle(self, *args, **options):
         # TODO: change
         self.main()
 
-    def start(self, update, context):
+    def get_category_keyboard(self):
+        return split_array(get_categories(), 3)
+
+    def get_ingredient_keyboard(self, category_names):
+        return split_array(get_ingredients(category_names), 3)
+
+    def update_current_status(self, update):
+        user = update.message.from_user
+        ingredients = self.data[user.id]["ingredients"]
 
         update.message.reply_text(
-            'Hi! My name is Professor Bot. I will hold a conversation with you. '
-            'Send /cancel to stop talking to me.\n\n'
-            'Send /done to find ur receipt\n\n'
-            'Which CHANGEMEEEEEE do you have?',
-            reply_markup=ReplyKeyboardMarkup(type_keyboard, one_time_keyboard=True))
-
-        return INGREDIENTS
+            'Current Ingredients:\n' + "\n".join(ingredients) + "\n\n"
+            'Send /add to add more ingredients.\n'
+            'Send /done to find your recipes.\n'
+            'Send /cancel to stop talking to me.\n')
 
 
-    def ingredients(self, update, context):
-        # user = update.message.from_user
+    def reset_status(self, update):
+        user = update.message.from_user
 
-        ingredient_category = update.message.text
-        import pdb
-        pdb.set_trace()
-        
-        logger.info(update.message.text)
+        self.data[user.id] = {
+            "ingredients": []
+        }
 
+
+    def start(self, update, context):
+        self.reset_status(update)
+
+        update.message.reply_text(
+            'Hi! My name is Professor Bot. I will hold a conversation with you. ')
+
+        self.update_current_status(update)
+
+        return MAIN
+
+    def add(self, update, context):
+        user = update.message.from_user
+
+        update.message.reply_text(
+            'Select a category of ingredients',
+            reply_markup=ReplyKeyboardMarkup(self.get_category_keyboard(), one_time_keyboard=True))
+
+        return CATEGORY
+
+
+    def category(self, update, context):
+        user = update.message.from_user
+        category = update.message.text
+
+        if not category in get_categories():
+            return CATEGORY
+
+        self.data[user.id]["category"] = category
 
         update.message.reply_text('I see! Please send me an yes of yourself, '
                                 'so I know what you look like, or send /skip if you don\'t want to.',
-                                reply_markup=ReplyKeyboardMarkup(type_keyboard, one_time_keyboard=True))
-        logger.info("Ingredient is choosen")
+                                reply_markup=ReplyKeyboardMarkup(self.get_ingredient_keyboard(category), one_time_keyboard=True))
 
-        if ingredient_category == "Meat" :
-            logger.info("if loop entered: meat")
-            update.message.reply_text('Meat is choosen', reply_markup=ReplyKeyboardMarkup(meat_keyboard))
-            update.message.reply_text(self.meat_counter)
-            
-            self.meat_counter+=1
-            return MEAT
+        return INGREDIENT
 
-        else :
-            logger.info("Exiting ingredients")
-            # return BIO
-
-
-    def meat(self, update, context):
-
-        logger.info("meat is selecteddddddddddddddddddddddd")
-        update.message.reply_text("meat is selected", reply_markup=ReplyKeyboardMarkup(type_keyboard))
-
-        return INGREDIENTS
-
-
-    def bio(self, update, context):
+    def ingredient(self, update, context):
         user = update.message.from_user
-        logger.info("Bio of %s: %s", user.first_name, update.message.text)
-        update.message.reply_text('Thank you! I hope we can talk again some day.')
+        ingredient = update.message.text
+        category = self.data[user.id]["category"]
 
-        return ConversationHandler.END
+        if not ingredient in get_ingredients(category):
+            return INGREDIENT
 
+        ingredients = self.data[user.id]["ingredients"]
+        ingredients.append(ingredient)
+
+        update.message.reply_text('The ingredient ' + ingredient + ' has been added.')
+
+        self.update_current_status(update)
+        return MAIN
+
+    def status(self, update, context):
+        self.update_current_status(update)
+        return MAIN
+
+    def done(self, update, context):
+        user = update.message.from_user
+
+        ingredients = self.data[user.id]["ingredients"]
+
+        ingredients_list = Ingredient.objects.filter(name__in=ingredients)
+
+        result = ""
+        recipes = rank_recipes(ingredients_list, n=5)
+
+        for i, (point, recipe) in enumerate(recipes):
+            all_ingredients = list(map(lambda x: x.name, recipe.ingredients.get_queryset()))
+            missing_ingredients = set(all_ingredients) - set(ingredients_list)
+            result += str(i + 1) + "\n"
+            result += "Name: " + recipe.name + "\n"
+            result += "Point: " + "{:.1%}".format(point) + "\n"
+            result += "Ingredients: " + str(", ".join(all_ingredients)) + "\n"
+            result += "Missing Ingredients: " + str(", ".join(missing_ingredients)) + "\n"
+            result += "Website: " + recipe.recipe_link + "\n"
+            result += "\n"
+
+        update.message.reply_text(result)
+
+        return MAIN
 
     def cancel(self, update, context):
         user = update.message.from_user
@@ -175,15 +159,6 @@ class Command(BaseCommand):
 
 
     def main(self):
-        # # Create the Updater and pass it your bot's token.
-        # # Make sure to set use_context=True to use the new context based callbacks
-        # # Post version 12 this will no longer be necessary
-        # updater = Updater("TOKEN", use_context=True)
-
-        # pass
-            # Create the Updater and pass it your bot's token.
-        # Make sure to set use_context=True to use the new context based callbacks
-        # Post version 12 this will no longer be necessary
         updater = Updater(
             "1002329449:AAFAK5ltD_lg-g8MAc9iC-0KaK12qZDfEqk", use_context=True)
 
@@ -197,17 +172,13 @@ class Command(BaseCommand):
             entry_points=[CommandHandler('start', self.start)],
 
             states={
-                INGREDIENTS: [MessageHandler(Filters.regex('^(Meat|Dairy|Robin)$'), self.ingredients)],
+                MAIN: [CommandHandler('add', self.add),
+                        CommandHandler('done', self.done),
+                        CommandHandler('status', self.status)],
 
-                # PHOTO: [MessageHandler(Filters.photo, photo),
-                #         CommandHandler('skip', skip_photo)],
+                CATEGORY: [MessageHandler(Filters.text, self.category)],
 
-                # LOCATION: [MessageHandler(Filters.location, location),
-                #            CommandHandler('skip', skip_location)],
-
-                MEAT: [MessageHandler(Filters.regex('^(Beef|Chicken)$'), self.meat)],
-
-                BIO: [MessageHandler(Filters.text, self.bio)]
+                INGREDIENT: [MessageHandler(Filters.text, self.ingredient)]
             },
 
             fallbacks=[CommandHandler('cancel', self.cancel)]
