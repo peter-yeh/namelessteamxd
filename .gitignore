@@ -1,0 +1,7 @@
+temp/
+virtualenv/
+
+*.pyc
+__pycache__/
+
+.vscode/
