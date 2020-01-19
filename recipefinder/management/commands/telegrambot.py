@@ -69,7 +69,8 @@ class Command(BaseCommand):
 
         update.message.reply_text('Hi! My name is reduce food waste bot Bot. '
             'Select the ingredients you have in your fridge and '
-            'I will help you decide on what delicious meals you can prepare with them'
+            'I will help you decide on what delicious meals you can prepare with them')
+            
         self.update_current_status(update)
 
         return MAIN
@@ -93,7 +94,7 @@ class Command(BaseCommand):
 
         self.data[user.id]["category"] = category
 
-        update.message.reply_text('Choose the ingredient you have.',
+        update.message.reply_text('Choose the ingredient you want to add.',
                                 reply_markup=ReplyKeyboardMarkup(self.get_ingredient_keyboard(category), one_time_keyboard=True))
 
         return INGREDIENT
