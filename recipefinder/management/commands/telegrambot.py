@@ -67,7 +67,7 @@ class Command(BaseCommand):
     def start(self, update, context):
         self.reset_status(update)
 
-        update.message.reply_text('Hi! My name is reduce food waste bot Bot. '
+        update.message.reply_text('Hi! My name is buttercream frosting Bot. '
             'Select the ingredients you have in your fridge and '
             'I will help you decide on what delicious meals you can prepare with them')
             
