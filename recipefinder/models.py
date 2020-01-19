@@ -2,6 +2,7 @@ from django.db import models
 
 class IngredientCategory(models.Model):
     name = models.CharField(max_length=50, unique=True, null=False)
+    emoji = models.CharField(max_length=10)
 
 class Ingredient(models.Model):
     name = models.CharField(max_length=100, unique=True, null=False)

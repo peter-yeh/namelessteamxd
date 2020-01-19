@@ -24,7 +24,9 @@ def split_array(array, size_per_list):
     return new_array
 
 def get_categories():
-    return list(map(capitalize_sentence, IngredientCategory.objects.all().values_list('name', flat=True)))
+    def to_string(category):
+        return capitalize_sentence(category.name + " " + chr(int(category.emoji[2:], 16)))
+    return list(map(to_string, IngredientCategory.objects.all()))
 
 def get_ingredients(category_name):
     return list(map(capitalize_sentence, Ingredient.objects.filter(category__name=category_name).values_list('name', flat=True)))

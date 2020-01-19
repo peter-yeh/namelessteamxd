@@ -10,12 +10,21 @@ class Command(BaseCommand):
     help = 'Mass imports all the data from the file'
 
     def add_arguments(self, parser):
+        parser.add_argument('category_file', nargs='+', type=str)
         parser.add_argument('ingredient_file', nargs='+', type=str)
         parser.add_argument('recipe_file', nargs='+', type=str)
 
     def handle(self, *args, **options):
+        category_file = options['category_file'][0]
         ingredient_file = options['ingredient_file'][0]
         recipe_file = options['recipe_file'][0]
+
+        with open(category_file, 'r') as csvfile:
+            categoryreader = csv.reader(csvfile)
+            for row in categoryreader:
+                name = row[0]
+                emoji = row[1]
+                category_obj, created = IngredientCategory.objects.update_or_create(name=name, defaults={'emoji': emoji})
 
         with open(ingredient_file, 'r') as csvfile:
             ingredientreader = csv.reader(csvfile)
