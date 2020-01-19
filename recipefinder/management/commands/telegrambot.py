@@ -74,11 +74,15 @@ class Command(BaseCommand):
     def start(self, update, context):
         self.reset_status(update)
 
-        update.message.reply_text('Hi! My name is buttercream frosting Bot. '
+        update.message.reply_text('Hi! My name is Buttercream Frosting Bot ' 
+            + '\U0001F9C1' + '\n' 
             'Select the ingredients you have in your fridge and '
+            # + "\U0001F35E" + 
             'I will help you decide on what delicious meals you can prepare with them')
             
         self.update_current_status(update)
+
+        
 
         return MAIN
 
@@ -200,7 +204,7 @@ class Command(BaseCommand):
 
     def main(self):
         updater = Updater(
-            "1002329449:AAFAK5ltD_lg-g8MAc9iC-0KaK12qZDfEqk", use_context=True)
+            "919724175:AAFCkSlYl04sQUwTdGa6fAxtczWn6LL2xR4", use_context=True)
 
         # Get the dispatcher to register handlers
         dp = updater.dispatcher
