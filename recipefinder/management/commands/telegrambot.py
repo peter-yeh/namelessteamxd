@@ -67,9 +67,9 @@ class Command(BaseCommand):
     def start(self, update, context):
         self.reset_status(update)
 
-        update.message.reply_text(
-            'Hi! My name is Professor Bot. I will hold a conversation with you. ')
-
+        update.message.reply_text('Hi! My name is reduce food waste bot Bot. '
+            'Select the ingredients you have in your fridge and '
+            'I will help you decide on what delicious meals you can prepare with them'
         self.update_current_status(update)
 
         return MAIN
@@ -93,8 +93,7 @@ class Command(BaseCommand):
 
         self.data[user.id]["category"] = category
 
-        update.message.reply_text('I see! Please send me an yes of yourself, '
-                                'so I know what you look like, or send /skip if you don\'t want to.',
+        update.message.reply_text('Choose the ingredient you have.',
                                 reply_markup=ReplyKeyboardMarkup(self.get_ingredient_keyboard(category), one_time_keyboard=True))
 
         return INGREDIENT
@@ -165,9 +164,6 @@ class Command(BaseCommand):
         # Get the dispatcher to register handlers
         dp = updater.dispatcher
 
-
-        # commented by meeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
-        # Add conversation handler with the states INGREDIENTS, PHOTO, LOCATION and BIO
         conv_handler = ConversationHandler(
             entry_points=[CommandHandler('start', self.start)],
 
