@@ -20,4 +20,4 @@ def rank_recipes(ingredients_list, n=5):
 
         return (compulsory_ingredient_percentage, recipe)
 
-    return list(sorted(map(get_point, all_recipes), key=lambda x: x[0], reverse=True))[:n]
+    return list(sorted(filter(lambda x: x[0] > 0, map(get_point, all_recipes)), key=lambda x: x[0], reverse=True))[:n]

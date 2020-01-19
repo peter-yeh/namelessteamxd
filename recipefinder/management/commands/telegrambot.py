@@ -2,7 +2,7 @@ from django.core.management.base import BaseCommand, CommandError
 import logging
 import math
 
-from telegram import (ReplyKeyboardMarkup, ReplyKeyboardRemove)
+from telegram import (ReplyKeyboardMarkup, ReplyKeyboardRemove, ParseMode)
 from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters,
                           ConversationHandler)
 
@@ -15,7 +15,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 logger = logging.getLogger(__name__)
 
-MAIN, CATEGORY, INGREDIENT, BIO = range(4)
+MAIN, CATEGORY, INGREDIENT = range(3)
 
 def split_array(array, size_per_list):
     new_array = []
@@ -24,10 +24,13 @@ def split_array(array, size_per_list):
     return new_array
 
 def get_categories():
-    return IngredientCategory.objects.all().values_list('name', flat=True)
+    return list(map(capitalize_sentence, IngredientCategory.objects.all().values_list('name', flat=True)))
 
 def get_ingredients(category_name):
-    return Ingredient.objects.filter(category__name=category_name).values_list('name', flat=True)
+    return list(map(capitalize_sentence, Ingredient.objects.filter(category__name=category_name).values_list('name', flat=True)))
+
+def capitalize_sentence(sentence):
+    return " ".join(w.capitalize() for w in sentence.split())
 
 class Command(BaseCommand):
     help = 'Closes the specified poll for voting'
@@ -129,18 +132,20 @@ class Command(BaseCommand):
         result = ""
         recipes = rank_recipes(ingredients_list, n=5)
 
+        ingredients_name_list = set(map(capitalize_sentence, ingredients_list.values_list("name", flat=True)))
+
         for i, (point, recipe) in enumerate(recipes):
-            all_ingredients = list(map(lambda x: x.name, recipe.ingredients.get_queryset()))
-            missing_ingredients = set(all_ingredients) - set(ingredients_list)
+            all_ingredients = set(map(capitalize_sentence, recipe.ingredients.get_queryset().values_list("name", flat=True)))
+            have_ingredients = all_ingredients & ingredients_name_list
+            missing_ingredients = all_ingredients - ingredients_name_list
             result += str(i + 1) + "\n"
-            result += "Name: " + recipe.name + "\n"
-            result += "Point: " + "{:.1%}".format(point) + "\n"
-            result += "Ingredients: " + str(", ".join(all_ingredients)) + "\n"
-            result += "Missing Ingredients: " + str(", ".join(missing_ingredients)) + "\n"
+            result += "Name: " + capitalize_sentence(recipe.name) + "\n"
+            result += "Similarity Point: " + "{:.1%}".format(point) + "\n"
+            result += "Ingredients: " + "<b>" + ", ".join(have_ingredients) + "</b>" + (", " if len(missing_ingredients) > 0 and len(have_ingredients) > 0 else "") + (("<i>" + ", ".join(missing_ingredients) + "</i>") if len(missing_ingredients) > 0 else "")+ "\n"
             result += "Website: " + recipe.recipe_link + "\n"
             result += "\n"
 
-        update.message.reply_text(result)
+        update.message.reply_text(result, parse_mode=ParseMode.HTML)
 
         return MAIN
 
